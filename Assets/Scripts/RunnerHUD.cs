@@ -17,8 +17,13 @@ namespace VoiceRunner
         public bool showDirectorDebug = true;
 
         static readonly Dictionary<string, Texture2D> texCache = new Dictionary<string, Texture2D>();
-        GUIStyle label, big, small, centerBig;
+        GUIStyle label, big, small, centerBig, coinCountStyle, popStyle;
         float uiScale;
+
+        // ---- coin badge state ---------------------------------------------
+        int lastCoinCount = -1;
+        float coinBumpTimer;
+        const float coinBumpDuration = 0.32f;
 
         static Texture2D Tex(Color c)
         {
@@ -41,13 +46,88 @@ namespace VoiceRunner
             small = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(12 * uiScale) };
             big = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(30 * uiScale), fontStyle = FontStyle.Bold };
             centerBig = new GUIStyle(big) { alignment = TextAnchor.MiddleCenter };
+            coinCountStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(19 * uiScale),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft
+            };
+            popStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = Mathf.RoundToInt(13 * uiScale),
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
             label.normal.textColor = Color.white;
             small.normal.textColor = new Color(1f, 1f, 1f, 0.65f);
             big.normal.textColor = Color.white;
             centerBig.normal.textColor = Color.white;
+            coinCountStyle.normal.textColor = new Color(1f, 0.92f, 0.55f);
+        }
+
+        /// <summary>Icon + live count, in its own pill so it reads as a real HUD stat rather
+        /// than buried text. Pulses and pops a "+1" for a moment whenever a coin is picked up.</summary>
+        void DrawCoinBadge(float x, float y, float s)
+        {
+            float h = 30 * s;
+            float w = 108 * s;
+            var badge = new Rect(x, y, w, h);
+
+            float pulse = coinBumpDuration > 0f ? coinBumpTimer / coinBumpDuration : 0f; // 1 -> 0
+            var prevMatrix = GUI.matrix;
+            if (pulse > 0f)
+                GUIUtility.ScaleAroundPivot(Vector2.one * (1f + 0.22f * pulse), badge.center);
+
+            Box(badge, new Color(0f, 0f, 0f, 0.35f));
+            Box(new Rect(badge.x + 1.5f * s, badge.y + 1.5f * s, badge.width - 3f * s, badge.height - 3f * s),
+                new Color(1f, 0.85f, 0.25f, 0.08f));
+
+            float iconSize = badge.height - 6 * s;
+            var iconRect = new Rect(badge.x + 4 * s, badge.y + 3 * s, iconSize, iconSize);
+            DrawSprite(iconRect, SpriteFactory.CoinSprite(), Color.white);
+
+            var countRect = new Rect(iconRect.xMax + 6 * s, badge.y, badge.width - iconSize - 14 * s, badge.height);
+            GUI.Label(countRect, game.Coins.ToString(), coinCountStyle);
+
+            GUI.matrix = prevMatrix;
+
+            if (pulse > 0f)
+            {
+                var c = popStyle.normal.textColor;
+                popStyle.normal.textColor = new Color(1f, 0.85f, 0.25f, pulse);
+                GUI.Label(new Rect(badge.x, badge.y - (16 + 10 * (1f - pulse)) * s, badge.width, 18 * s), "+1", popStyle);
+                popStyle.normal.textColor = c;
+            }
+
+            GUI.Label(new Rect(badge.xMax + 8 * s, y, 120 * s, h), string.Format("best {0}", game.BestCoins), small);
         }
 
         void Box(Rect r, Color c) { GUI.DrawTexture(r, Tex(c)); }
+
+        /// <summary>Draws a Sprite's own texture region (safe even if it's packed into an atlas).</summary>
+        static void DrawSprite(Rect r, Sprite spr, Color tint)
+        {
+            if (spr == null || spr.texture == null) return;
+            var tr = spr.textureRect;
+            var tex = spr.texture;
+            var uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
+            var prev = GUI.color;
+            GUI.color = tint;
+            GUI.DrawTextureWithTexCoords(r, tex, uv);
+            GUI.color = prev;
+        }
+
+        void Update()
+        {
+            // Detected here (once per frame) rather than in OnGUI, which can run multiple
+            // passes per frame and would otherwise re-trigger the bump animation.
+            if (game == null) return;
+            if (coinBumpTimer > 0f) coinBumpTimer = Mathf.Max(0f, coinBumpTimer - Time.deltaTime);
+
+            if (lastCoinCount < 0) lastCoinCount = game.Coins;
+            else if (game.Coins > lastCoinCount) coinBumpTimer = coinBumpDuration;
+            lastCoinCount = game.Coins;
+        }
 
         void OnGUI()
         {
@@ -60,7 +140,9 @@ namespace VoiceRunner
             GUI.Label(new Rect(pad, pad, 420 * s, 40 * s),
                 string.Format("{0:0} m", game.Distance), big);
             GUI.Label(new Rect(pad, pad + 34 * s, 420 * s, 24 * s),
-                string.Format("best {0:0} m    coins {1}  (best {2})", game.BestDistance, game.Coins, game.BestCoins), small);
+                string.Format("best {0:0} m", game.BestDistance), small);
+
+            DrawCoinBadge(pad, pad + 34 * s + 22 * s, s);
 
             // ---- mic meter ---------------------------------------------------
             float mw = 240 * s, mh = 16 * s;
