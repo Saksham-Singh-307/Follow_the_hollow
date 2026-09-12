@@ -428,22 +428,22 @@ MonoBehaviour:
     musicVolume: 0.036
     jumpSound: {fileID: 8300000, guid: 5ca21c2962adafd4cab9b0c814b85b61, type: 3}
     doubleJumpSound: {fileID: 8300000, guid: 5ca21c2962adafd4cab9b0c814b85b61, type: 3}
-    landSound: {fileID: 0}
-    deathSpikesSound: {fileID: 0}
+    landSound: {fileID: 8300000, guid: 521b56084143621428e76748b9d2a834, type: 3}
+    deathSpikesSound: {fileID: 8300000, guid: fb7d50d50cf105a489032d6f07b0b711, type: 3}
     deathPitSound: {fileID: 8300000, guid: 775d8d4760ba3a449980beabe9f585ca, type: 3}
-    deathCaughtSound: {fileID: 0}
+    deathCaughtSound: {fileID: 8300000, guid: 42d947c0cb54c4d4393ce7b88cbafe3b, type: 3}
     deathChompedSound: {fileID: 0}
-    deathAmbushedSound: {fileID: 0}
-    fakeBlockBreakSound: {fileID: 0}
+    deathAmbushedSound: {fileID: 8300000, guid: e848f163e5536414d9ea9cd46bb024c7, type: 3}
+    fakeBlockBreakSound: {fileID: 8300000, guid: f4785ab1af2357741acaec3f204dff1f, type: 3}
     fallingBlockBreakSound: {fileID: 0}
     invisibleBlockRevealSound: {fileID: 0}
-    popupSpikeSound: {fileID: 0}
+    popupSpikeSound: {fileID: 8300000, guid: b5af1177715ecf94fa86b696e5d070a5, type: 3}
     crusherFallSound: {fileID: 0}
     chomperRevealSound: {fileID: 0}
     coinSound: {fileID: 8300000, guid: e69cf81d85e8e2d49ba9e431a3585705, type: 3}
     speedPowerUpSound: {fileID: 8300000, guid: 3b2c4865387214e47be6e4878d01d0c6, type: 3}
-    highJumpPowerUpSound: {fileID: 0}
-    invisibilityPowerUpSound: {fileID: 0}
+    highJumpPowerUpSound: {fileID: 8300000, guid: a00f64732a567ba40b9b80f90669853e, type: 3}
+    invisibilityPowerUpSound: {fileID: 8300000, guid: f7cb36665b2138f418c2bb76c4901d1b, type: 3}
     runStartSound: {fileID: 0}
     gameOverSound: {fileID: 0}
   forwardEnemiesEnabled: 1
