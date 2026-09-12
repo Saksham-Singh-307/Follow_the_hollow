@@ -46,6 +46,7 @@ namespace VoiceRunner
             if (triggered) return;
             if (c.collider.GetComponent<VoicePlayer>() == null) return;
             triggered = true;
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.fakeBlockBreakSound);
         }
 
         void Update()
@@ -100,6 +101,7 @@ namespace VoiceRunner
             shown = true;
             if (sr != null) sr.enabled = true;
             if (col != null) col.enabled = true;
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.invisibleBlockRevealSound);
         }
     }
 
@@ -128,7 +130,11 @@ namespace VoiceRunner
         void Update()
         {
             float d = -DistToPlayerX; // positive while the player is still to the left
-            if (!armed && d < armDistance && d > -2f) armed = true;
+            if (!armed && d < armDistance && d > -2f)
+            {
+                armed = true;
+                if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.popupSpikeSound);
+            }
 
             float target = armed ? shownY : hiddenY;
             var lp = art.localPosition;
@@ -181,6 +187,7 @@ namespace VoiceRunner
             {
                 rb.bodyType = RigidbodyType2D.Dynamic;
                 rb.gravityScale = 3.5f;
+                if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.fallingBlockBreakSound);
                 Destroy(gameObject, 3f);
             }
         }
@@ -245,6 +252,7 @@ namespace VoiceRunner
                 sr.sprite = SpriteFactory.ChomperSprite();
                 sr.transform.localScale = Vector3.one * 1.25f;
             }
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.chomperRevealSound);
         }
     }
 
@@ -268,6 +276,7 @@ namespace VoiceRunner
             go.transform.position = transform.position;
             var s = SpriteFactory.NewRenderer(go, SpriteFactory.CoinSprite(), 6);
             go.AddComponent<FadeAway>().Init(s, 0.3f, 1.8f);
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.coinSound);
             Destroy(gameObject);
         }
     }
@@ -285,7 +294,11 @@ namespace VoiceRunner
             if (!falling)
             {
                 float d = -DistToPlayerX;
-                if (d < armDistance && d > -1f) falling = true;
+                if (d < armDistance && d > -1f)
+                {
+                    falling = true;
+                    if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.crusherFallSound);
+                }
                 return;
             }
             fallSpeed += 30f * Time.deltaTime;

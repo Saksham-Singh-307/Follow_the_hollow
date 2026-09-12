@@ -48,12 +48,15 @@ namespace VoiceRunner
             {
                 case PowerUpKind.Speed:
                     vp.ApplySpeedBoost(speedMultiplier, speedDuration);
+                    if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.speedPowerUpSound);
                     break;
                 case PowerUpKind.HighJump:
                     vp.ApplyHighJump(jumpMultiplier, jumpDuration);
+                    if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.highJumpPowerUpSound);
                     break;
                 case PowerUpKind.Invisibility:
                     vp.ApplyInvisibility(invisibilityDuration);
+                    if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.invisibilityPowerUpSound);
                     break;
             }
 

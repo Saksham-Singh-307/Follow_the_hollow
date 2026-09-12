@@ -23,6 +23,9 @@ namespace VoiceRunner
         [Header("Art (optional — leave slots empty to keep the procedural placeholder shapes)")]
         public AssetLibrary assets = new AssetLibrary();
 
+        [Header("Sound (optional — leave slots empty to keep the game silent, just like art)")]
+        public AudioLibrary sounds = new AudioLibrary();
+
         [Header("Forward Enemies")]
         public bool forwardEnemiesEnabled = true;
 
@@ -33,6 +36,10 @@ namespace VoiceRunner
 
             // Must happen before anything below asks SpriteFactory for a sprite.
             SpriteFactory.Assets = assets;
+
+            // Same idea for audio: assign before anything below could try to play a sound.
+            Sfx.Assets = sounds;
+            Sfx.PlayMusic(sounds.backgroundMusic, sounds.musicVolume);
 
             var camGo = BuildCamera();
             var camFollow = camGo.GetComponent<RunnerCamera>();

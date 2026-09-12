@@ -405,6 +405,9 @@ MonoBehaviour:
     spikesWideSprite: {fileID: 0}
     chomperSprite: {fileID: 0}
     coinSprite: {fileID: 0}
+    speedPowerUpSprite: {fileID: 0}
+    highJumpPowerUpSprite: {fileID: 0}
+    invisibilityPowerUpSprite: {fileID: 0}
     catSprite: {fileID: 0}
     hollowSprite: {fileID: 21300000, guid: a3165a93e8e4cdf40ae0bd4627c75c9b, type: 3}
     auraGlowSprite: {fileID: 0}
@@ -416,7 +419,29 @@ MonoBehaviour:
     - {fileID: -4412400775436110376, guid: e1996a3b8d8983e4082d634a6f082286, type: 3}
     - {fileID: 2704208188245951875, guid: 12c42d5109ee58b47b7fb5440a093ea4, type: 3}
     - {fileID: -4489649203509156242, guid: 2e279adda0badc44d9ce1a84d0343aca, type: 3}
-  laserShoutsToFire: 3
+  sounds:
+    backgroundMusic: {fileID: 8300000, guid: a724ee68296a7fb4f86143d339e937a6, type: 3}
+    musicVolume: 0.036
+    jumpSound: {fileID: 0}
+    doubleJumpSound: {fileID: 0}
+    landSound: {fileID: 0}
+    deathSpikesSound: {fileID: 0}
+    deathPitSound: {fileID: 0}
+    deathCaughtSound: {fileID: 0}
+    deathChompedSound: {fileID: 0}
+    deathAmbushedSound: {fileID: 0}
+    fakeBlockBreakSound: {fileID: 0}
+    fallingBlockBreakSound: {fileID: 0}
+    invisibleBlockRevealSound: {fileID: 0}
+    popupSpikeSound: {fileID: 0}
+    crusherFallSound: {fileID: 0}
+    chomperRevealSound: {fileID: 0}
+    coinSound: {fileID: 0}
+    speedPowerUpSound: {fileID: 0}
+    highJumpPowerUpSound: {fileID: 0}
+    invisibilityPowerUpSound: {fileID: 0}
+    runStartSound: {fileID: 0}
+    gameOverSound: {fileID: 0}
   forwardEnemiesEnabled: 1
 --- !u!4 &1730114003
 Transform:

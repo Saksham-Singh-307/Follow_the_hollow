@@ -221,7 +221,11 @@ namespace VoiceRunner
             var hit = Physics2D.OverlapBox(feet, new Vector2(size.x * 0.92f, 0.14f), 0f, VRLayers.GroundMask);
             bool grounded = hit != null && rb.linearVelocity.y <= 0.5f;
 
-            if (grounded && !IsGrounded) UsedDoubleJump = false;
+            if (grounded && !IsGrounded)
+            {
+                UsedDoubleJump = false;
+                if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.landSound);
+            }
             IsGrounded = grounded;
             if (grounded) lastGroundedTime = Time.time;
         }
@@ -236,12 +240,14 @@ namespace VoiceRunner
             {
                 Jump(jumpVelocity * jumpMul);
                 lastGroundedTime = -99f;
+                if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.jumpSound);
             }
             else if (!UsedDoubleJump)
             {
                 UsedDoubleJump = true;
                 Jump(doubleJumpVelocity * jumpMul);
                 SpawnPuff();
+                if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.doubleJumpSound);
             }
         }
 
@@ -311,7 +317,22 @@ namespace VoiceRunner
             if (sr != null) sr.color = new Color(1f, 0.5f, 0.5f);
             rb.linearVelocity = new Vector2(-2f, 9f);
             rb.gravityScale = gravityFall;
+            if (Sfx.Assets != null) Sfx.Play(DeathSound(cause));
             if (game != null) game.PlayerDied(cause);
+        }
+
+        static AudioClip DeathSound(DeathCause cause)
+        {
+            var a = Sfx.Assets;
+            switch (cause)
+            {
+                case DeathCause.Spikes:   return a.deathSpikesSound;
+                case DeathCause.Pit:      return a.deathPitSound;
+                case DeathCause.Caught:   return a.deathCaughtSound;
+                case DeathCause.Chomped:  return a.deathChompedSound;
+                case DeathCause.Ambushed: return a.deathAmbushedSound;
+                default:                  return null;
+            }
         }
 
         public void ReviveFlagOnly() { alive = true; }

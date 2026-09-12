@@ -68,6 +68,8 @@ namespace VoiceRunner
 
             Distance = 0f;
             SetState(GameState.Playing);
+
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.runStartSound);
         }
 
         void Update()
@@ -126,6 +128,7 @@ namespace VoiceRunner
 
             if (cam != null) cam.Kick(cause == DeathCause.Caught ? 0.45f : 0.28f);
             if (director != null) director.NotifyDeath();
+            if (Sfx.Assets != null) Sfx.Play(Sfx.Assets.gameOverSound);
 
             if (Distance > BestDistance)
             {
