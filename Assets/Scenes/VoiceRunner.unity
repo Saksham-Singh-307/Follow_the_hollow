@@ -341,7 +341,11 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 7671765696863010971
+    - rid: 7671765696863010971
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
 --- !u!4 &619394802
 Transform:
   m_ObjectHideFlags: 0
@@ -390,7 +394,7 @@ MonoBehaviour:
   jumpVelocity: 14
   doubleJumpVelocity: 12.5
   cameraSize: 6.2
-  voiceTriggerLevel: 0.45
+  voiceTriggerLevel: 0.502
   assets:
     groundTopTile: {fileID: 0}
     groundFillTile: {fileID: 0}
@@ -422,11 +426,11 @@ MonoBehaviour:
   sounds:
     backgroundMusic: {fileID: 8300000, guid: a724ee68296a7fb4f86143d339e937a6, type: 3}
     musicVolume: 0.036
-    jumpSound: {fileID: 0}
-    doubleJumpSound: {fileID: 0}
+    jumpSound: {fileID: 8300000, guid: 5ca21c2962adafd4cab9b0c814b85b61, type: 3}
+    doubleJumpSound: {fileID: 8300000, guid: 5ca21c2962adafd4cab9b0c814b85b61, type: 3}
     landSound: {fileID: 0}
     deathSpikesSound: {fileID: 0}
-    deathPitSound: {fileID: 0}
+    deathPitSound: {fileID: 8300000, guid: 775d8d4760ba3a449980beabe9f585ca, type: 3}
     deathCaughtSound: {fileID: 0}
     deathChompedSound: {fileID: 0}
     deathAmbushedSound: {fileID: 0}
@@ -436,8 +440,8 @@ MonoBehaviour:
     popupSpikeSound: {fileID: 0}
     crusherFallSound: {fileID: 0}
     chomperRevealSound: {fileID: 0}
-    coinSound: {fileID: 0}
-    speedPowerUpSound: {fileID: 0}
+    coinSound: {fileID: 8300000, guid: e69cf81d85e8e2d49ba9e431a3585705, type: 3}
+    speedPowerUpSound: {fileID: 8300000, guid: 3b2c4865387214e47be6e4878d01d0c6, type: 3}
     highJumpPowerUpSound: {fileID: 0}
     invisibilityPowerUpSound: {fileID: 0}
     runStartSound: {fileID: 0}
