@@ -147,6 +147,7 @@ namespace VoiceRunner
                 case DeathCause.Caught:  return "THE HOLLOW GOT YOU";
                 case DeathCause.Pit:     return "INTO THE VOID";
                 case DeathCause.Chomped: return "THAT WAS NOT A COIN";
+                case DeathCause.Ambushed: return "HIT HEAD-ON";
                 default:                 return "SPIKED";
             }
         }

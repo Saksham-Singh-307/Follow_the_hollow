@@ -23,5 +23,5 @@ namespace VoiceRunner
         public static LayerMask HazardMask => 1 << Hazard;
     }
 
-    public enum DeathCause { Spikes, Pit, Caught, Chomped }
+    public enum DeathCause { Spikes, Pit, Caught, Chomped, Ambushed }
 }

@@ -20,6 +20,13 @@ namespace VoiceRunner
         [Header("Voice")]
         [Range(0.15f, 0.9f)] public float voiceTriggerLevel = 0.45f;
 
+        [Header("Laser")]
+        [Tooltip("How many quick shouts in a row fire the laser.")]
+        public int laserShoutsToFire = 3;
+
+        [Header("Forward Enemies")]
+        public bool forwardEnemiesEnabled = true;
+
         void Awake()
         {
             Application.targetFrameRate = 60;
@@ -35,6 +42,10 @@ namespace VoiceRunner
             voice.triggerLevel = voiceTriggerLevel;
 
             var player = BuildPlayer();
+            var laser = player.GetComponent<LaserShooter>();
+            laser.shoutsToFire = laserShoutsToFire;
+            laser.Bind(voice);
+
             var chaser = BuildChaser();
 
             var levelGo = new GameObject("Level");
@@ -50,17 +61,27 @@ namespace VoiceRunner
 
             player.game = game;
             player.Bind(voice);
+            laser.game = game;
             chaser.player = player;
             chaser.game = game;
             director.player = player;
             director.chaser = chaser;
             camFollow.target = player.transform;
 
+            if (forwardEnemiesEnabled)
+            {
+                var enemies = new GameObject("ForwardEnemies").AddComponent<ForwardEnemySpawner>();
+                enemies.player = player.transform;
+                enemies.game = game;
+                enemies.director = director;
+            }
+
             var hud = gameObject.AddComponent<RunnerHUD>();
             hud.game = game;
             hud.voice = voice;
             hud.director = director;
             hud.chaser = chaser;
+            hud.laser = laser;
 
             // Stand somewhere sane until the first run starts.
             director.ResetLevel(Random.Range(1, 99999), -6f);
@@ -152,6 +173,8 @@ namespace VoiceRunner
             vp.runSpeed = runSpeed;
             vp.jumpVelocity = jumpVelocity;
             vp.doubleJumpVelocity = doubleJumpVelocity;
+
+            go.AddComponent<LaserShooter>();
             return vp;
         }
 
