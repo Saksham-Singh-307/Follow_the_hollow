@@ -223,6 +223,9 @@ namespace VoiceRunner
             if (!alive || game == null || game.State != GameState.Playing) return;
             if (other.gameObject.layer == VRLayers.Hazard)
             {
+                var incoming = other.GetComponent<ForwardEnemyMover>();
+                if (incoming != null) { Kill(DeathCause.Ambushed); return; }
+
                 var chomp = other.GetComponent<Chomper>();
                 Kill(chomp != null ? DeathCause.Chomped : DeathCause.Spikes);
             }

@@ -51,12 +51,20 @@ namespace VoiceRunner
             col.size = new Vector2(width + 0.08f, 3f);
             col.offset = new Vector2(width * 0.5f, -1.5f);
 
-            var top = SpriteFactory.Tile(Palette.Ground, true);
-            var fill = SpriteFactory.Tile(Palette.Ground);
+            var top = SpriteFactory.GroundTopTile();
+            var fill = SpriteFactory.GroundFillTile();
+            // Only apply the depth-shading tint in placeholder mode; real art brings its own shading.
+            bool usingGroundArt = SpriteFactory.Assets != null && SpriteFactory.Assets.groundFillTile != null;
+            Color fillTint = usingGroundArt ? Color.white : new Color(0.8f, 0.8f, 0.85f);
+
+            // Must match the collider's 3-unit depth (see col.size above), or whatever sits
+            // behind the ground (background art, the void) peeks out under the track.
+            const int depthTiles = 3;
             for (int i = 0; i < width; i++)
             {
                 Art(go, top, -1, Color.white, new Vector2(i + 0.5f, -0.5f));
-                Art(go, fill, -2, new Color(0.8f, 0.8f, 0.85f), new Vector2(i + 0.5f, -1.5f));
+                for (int j = 1; j < depthTiles; j++)
+                    Art(go, fill, -2, fillTint, new Vector2(i + 0.5f, -0.5f - j));
             }
             return go;
         }
@@ -70,7 +78,7 @@ namespace VoiceRunner
             col.size = new Vector2(width + 0.04f, 1f);
             col.offset = new Vector2(width * 0.5f, -0.5f);
 
-            var sp = SpriteFactory.Tile(Palette.Platform, true);
+            var sp = SpriteFactory.PlatformTile();
             for (int i = 0; i < width; i++) Art(go, sp, -1, Color.white, new Vector2(i + 0.5f, -0.5f));
             return go;
         }
@@ -82,7 +90,7 @@ namespace VoiceRunner
             go.layer = VRLayers.Ground;
             var col = go.AddComponent<BoxCollider2D>();
             col.size = Vector2.one;
-            Art(go, SpriteFactory.Block(Palette.Block, marked), 0, Color.white);
+            Art(go, marked ? SpriteFactory.QuestionBlockSprite() : SpriteFactory.BlockSprite(), 0, Color.white);
             return go;
         }
 
@@ -100,7 +108,7 @@ namespace VoiceRunner
             go.layer = VRLayers.Ground;
             var col = go.AddComponent<BoxCollider2D>();
             col.size = Vector2.one;
-            Art(go, SpriteFactory.Block(new Color(0.75f, 0.72f, 0.45f), true), 0, Color.white);
+            Art(go, SpriteFactory.CamoBlockSprite(), 0, Color.white);
             go.AddComponent<VoiceRunner.InvisibleBlock>();
             return go;
         }
@@ -111,7 +119,7 @@ namespace VoiceRunner
             go.layer = VRLayers.Ground;
             var col = go.AddComponent<BoxCollider2D>();
             col.size = Vector2.one;
-            Art(go, SpriteFactory.Block(Palette.Falling, false), 0, Color.white);
+            Art(go, SpriteFactory.FallingBlockSprite(), 0, Color.white);
             go.AddComponent<VoiceRunner.FallingBlock>();
             return go;
         }
@@ -135,7 +143,7 @@ namespace VoiceRunner
             col.isTrigger = true;
             col.size = new Vector2(0.9f, 0.6f);
             col.offset = new Vector2(0f, 0.3f);
-            Art(go, SpriteFactory.Spikes(2), 1, Color.white, new Vector2(0f, 0.5f));
+            Art(go, SpriteFactory.SpikesSprite(), 1, Color.white, new Vector2(0f, 0.5f));
             return go;
         }
 
@@ -148,7 +156,7 @@ namespace VoiceRunner
             col.isTrigger = true;
             col.size = new Vector2(0.8f, 0.5f);
             col.enabled = false;
-            Art(go, SpriteFactory.Spikes(2), 1, new Color(1f, 0.85f, 0.85f));
+            Art(go, SpriteFactory.SpikesSprite(), 1, new Color(1f, 0.85f, 0.85f));
             go.AddComponent<PopupSpike>();
             return go;
         }
@@ -160,7 +168,7 @@ namespace VoiceRunner
             var col = go.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
             col.radius = 0.42f;
-            Art(go, SpriteFactory.Chomper(), 1, Color.white);
+            Art(go, SpriteFactory.ChomperSprite(), 1, Color.white);
             var ch = go.AddComponent<VoiceRunner.Chomper>();
             ch.leaps = leaps;
             return go;
@@ -173,7 +181,7 @@ namespace VoiceRunner
             var col = go.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
             col.radius = 0.40f;
-            Art(go, SpriteFactory.Coin(), 2, Color.white);
+            Art(go, SpriteFactory.CoinSprite(), 2, Color.white);
             var ch = go.AddComponent<VoiceRunner.Chomper>();
             ch.disguisedAsCoin = true;
             return go;
@@ -185,7 +193,7 @@ namespace VoiceRunner
             var col = go.AddComponent<CircleCollider2D>();
             col.isTrigger = true;
             col.radius = 0.40f;
-            Art(go, SpriteFactory.Coin(), 2, Color.white);
+            Art(go, SpriteFactory.CoinSprite(), 2, Color.white);
             go.AddComponent<VoiceRunner.Coin>();
             return go;
         }
@@ -197,8 +205,8 @@ namespace VoiceRunner
             var col = go.AddComponent<BoxCollider2D>();
             col.isTrigger = true;
             col.size = new Vector2(0.95f, 0.95f);
-            Art(go, SpriteFactory.Block(new Color(0.45f, 0.20f, 0.26f), false), 1, Color.white);
-            Art(go, SpriteFactory.Spikes(3), 2, Color.white, new Vector2(0f, -0.75f))
+            Art(go, SpriteFactory.CrusherBodySprite(), 1, Color.white);
+            Art(go, SpriteFactory.SpikesWideSprite(), 2, Color.white, new Vector2(0f, -0.75f))
                 .transform.localRotation = Quaternion.Euler(0f, 0f, 180f);
             var cr = go.AddComponent<VoiceRunner.Crusher>();
             cr.armDistance = Random.Range(3.1f, 4.1f);
@@ -213,7 +221,7 @@ namespace VoiceRunner
             var col = go.AddComponent<BoxCollider2D>();
             col.size = new Vector2(1f, height);
             col.offset = new Vector2(0f, height * 0.5f);
-            var sp = SpriteFactory.Tile(Palette.GroundEdge);
+            var sp = SpriteFactory.WallTile();
             for (int i = 0; i < height; i++) Art(go, sp, 0, Color.white, new Vector2(0f, i + 0.5f));
             return go;
         }

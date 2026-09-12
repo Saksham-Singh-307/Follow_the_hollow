@@ -242,7 +242,7 @@ namespace VoiceRunner
             transform.localRotation = Quaternion.identity;
             if (sr != null)
             {
-                sr.sprite = SpriteFactory.Chomper();
+                sr.sprite = SpriteFactory.ChomperSprite();
                 sr.transform.localScale = Vector3.one * 1.25f;
             }
         }
@@ -266,7 +266,7 @@ namespace VoiceRunner
             if (gm != null) gm.AddCoin();
             var go = new GameObject("CoinPop");
             go.transform.position = transform.position;
-            var s = SpriteFactory.NewRenderer(go, SpriteFactory.Coin(), 6);
+            var s = SpriteFactory.NewRenderer(go, SpriteFactory.CoinSprite(), 6);
             go.AddComponent<FadeAway>().Init(s, 0.3f, 1.8f);
             Destroy(gameObject);
         }

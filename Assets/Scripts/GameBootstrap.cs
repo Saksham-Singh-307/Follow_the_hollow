@@ -20,10 +20,23 @@ namespace VoiceRunner
         [Header("Voice")]
         [Range(0.15f, 0.9f)] public float voiceTriggerLevel = 0.45f;
 
+        [Header("Art (optional — leave slots empty to keep the procedural placeholder shapes)")]
+        public AssetLibrary assets = new AssetLibrary();
+
+        [Header("Laser")]
+        [Tooltip("How many quick shouts in a row fire the laser.")]
+        public int laserShoutsToFire = 3;
+
+        [Header("Forward Enemies")]
+        public bool forwardEnemiesEnabled = true;
+
         void Awake()
         {
             Application.targetFrameRate = 60;
             Physics2D.queriesHitTriggers = false;
+
+            // Must happen before anything below asks SpriteFactory for a sprite.
+            SpriteFactory.Assets = assets;
 
             var camGo = BuildCamera();
             var camFollow = camGo.GetComponent<RunnerCamera>();
@@ -35,6 +48,10 @@ namespace VoiceRunner
             voice.triggerLevel = voiceTriggerLevel;
 
             var player = BuildPlayer();
+            var laser = player.GetComponent<LaserShooter>();
+            laser.shoutsToFire = laserShoutsToFire;
+            laser.Bind(voice);
+
             var chaser = BuildChaser();
 
             var levelGo = new GameObject("Level");
@@ -50,17 +67,27 @@ namespace VoiceRunner
 
             player.game = game;
             player.Bind(voice);
+            laser.game = game;
             chaser.player = player;
             chaser.game = game;
             director.player = player;
             director.chaser = chaser;
             camFollow.target = player.transform;
 
+            if (forwardEnemiesEnabled)
+            {
+                var enemies = new GameObject("ForwardEnemies").AddComponent<ForwardEnemySpawner>();
+                enemies.player = player.transform;
+                enemies.game = game;
+                enemies.director = director;
+            }
+
             var hud = gameObject.AddComponent<RunnerHUD>();
             hud.game = game;
             hud.voice = voice;
             hud.director = director;
             hud.chaser = chaser;
+            hud.laser = laser;
 
             // Stand somewhere sane until the first run starts.
             director.ResetLevel(Random.Range(1, 99999), -6f);
@@ -115,6 +142,11 @@ namespace VoiceRunner
             px.tileWidth = tileWidth;
             layer.transform.position = new Vector3(0f, -1f, 10f);
 
+            bool usingBgArt = assets.backgroundBuildingSprites != null && assets.backgroundBuildingSprites.Length > 0;
+            // Real art keeps its own colors; give the far layer a slight atmospheric fade so
+            // the two depths still read as distinct even when they draw from the same set.
+            Color tint = usingBgArt ? (order <= -16 ? new Color(0.72f, 0.72f, 0.85f) : Color.white) : color;
+
             var rng = new System.Random(order * 7919);
             float x = -tileWidth * 2f;
             float end = tileWidth * 3f;
@@ -122,11 +154,21 @@ namespace VoiceRunner
             {
                 float w = 1.6f + (float)rng.NextDouble() * 2.6f;
                 float h = minH + (float)rng.NextDouble() * (maxH - minH);
+
+                // A different building can be picked for every tower in the row.
+                Sprite bgSprite = usingBgArt
+                    ? assets.backgroundBuildingSprites[rng.Next(assets.backgroundBuildingSprites.Length)]
+                    : SpriteFactory.Solid(Color.white);
+                // Read the sprite's real size (its pixel rect divided by its own import PPU) instead
+                // of assuming a fixed pixel size, so ANY image dimensions scale correctly here.
+                float nativeW = bgSprite.rect.width / bgSprite.pixelsPerUnit;
+                float nativeH = bgSprite.rect.height / bgSprite.pixelsPerUnit;
+
                 var tower = new GameObject("Tower");
                 tower.transform.SetParent(layer.transform, false);
                 tower.transform.localPosition = new Vector3(x + w * 0.5f, h * 0.5f - 2f, 0f);
-                tower.transform.localScale = new Vector3(w * SpriteFactory.PPU / 8f, h * SpriteFactory.PPU / 8f, 1f);
-                SpriteFactory.NewRenderer(tower, SpriteFactory.Solid(Color.white), order, color);
+                tower.transform.localScale = new Vector3(w / nativeW, h / nativeH, 1f);
+                SpriteFactory.NewRenderer(tower, bgSprite, order, tint);
                 x += w + 0.4f + (float)rng.NextDouble() * 1.4f;
             }
         }
@@ -139,7 +181,11 @@ namespace VoiceRunner
 
             var art = new GameObject("Art");
             art.transform.SetParent(go.transform, false);
-            SpriteFactory.NewRenderer(art, SpriteFactory.Cat(Palette.Cat), 5);
+            var catSprite = SpriteFactory.CatSprite(Palette.Cat);
+            SpriteFactory.NewRenderer(art, catSprite, 5);
+            // Custom art can be imported at any PPU; normalize so the cat always reads at the
+            // same size the placeholder does (placeholder is a 32x32 sprite @ PPU 32 = 1 unit tall).
+            SpriteFactory.NormalizeHeight(art.transform, catSprite, 1.0f);
 
             var rb = go.AddComponent<Rigidbody2D>();
             rb.freezeRotation = true;
@@ -152,6 +198,8 @@ namespace VoiceRunner
             vp.runSpeed = runSpeed;
             vp.jumpVelocity = jumpVelocity;
             vp.doubleJumpVelocity = doubleJumpVelocity;
+
+            go.AddComponent<LaserShooter>();
             return vp;
         }
 
@@ -162,14 +210,16 @@ namespace VoiceRunner
 
             var glow = new GameObject("Glow");
             glow.transform.SetParent(go.transform, false);
-            var gsr = SpriteFactory.NewRenderer(glow, SpriteFactory.Glow(), 3,
+            var glowSprite = SpriteFactory.AuraGlowSprite();
+            var gsr = SpriteFactory.NewRenderer(glow, glowSprite, 3,
                 new Color(0.35f, 0.05f, 0.30f, 0.22f));
-            gsr.transform.localScale = Vector3.one * 5.5f;
+            SpriteFactory.NormalizeHeight(gsr.transform, glowSprite, 11.0f);
 
             var art = new GameObject("Art");
             art.transform.SetParent(go.transform, false);
-            SpriteFactory.NewRenderer(art, SpriteFactory.Hollow(), 4);
-            art.transform.localScale = Vector3.one * 2.4f;
+            var hollowSprite = SpriteFactory.HollowSprite();
+            SpriteFactory.NewRenderer(art, hollowSprite, 4);
+            SpriteFactory.NormalizeHeight(art.transform, hollowSprite, 2.4f);
 
             return go.AddComponent<ChaserHollow>();
         }

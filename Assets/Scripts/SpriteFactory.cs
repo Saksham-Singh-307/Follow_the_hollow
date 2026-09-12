@@ -4,14 +4,51 @@ using UnityEngine;
 namespace VoiceRunner
 {
     /// <summary>
-    /// Generates every placeholder sprite in code so the game runs with zero art assets.
-    /// Swap these out later by assigning real sprites to the renderers the builders create.
+    /// The single place every visual in the game comes from. By default it draws placeholder
+    /// shapes in code so the game runs with zero art assets. Assign sprites to GameBootstrap's
+    /// AssetLibrary and this same factory serves your real art instead — ChunkBuilder and
+    /// everything else that asks for a sprite never needs to know which one it got.
     /// </summary>
     public static class SpriteFactory
     {
         public const float PPU = 32f;
         static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
         static Material spriteMat;
+
+        /// <summary>
+        /// Assigned once by GameBootstrap from its inspector-exposed AssetLibrary. Every
+        /// "Xyz Sprite()" method below checks here first and only falls back to the
+        /// procedural generator when a slot is left empty, so the game still runs with
+        /// zero art if nothing is assigned.
+        /// </summary>
+        public static AssetLibrary Assets;
+
+        // ---------------------------------------------------------------- asset-aware lookups
+        // These are what ChunkBuilder / GameBootstrap should call. Each one prefers a real
+        // asset from AssetLibrary and only draws the placeholder shape as a fallback.
+
+        public static Sprite GroundTopTile()  => Assets != null && Assets.groundTopTile  != null ? Assets.groundTopTile  : Tile(Palette.Ground, true);
+        public static Sprite GroundFillTile() => Assets != null && Assets.groundFillTile != null ? Assets.groundFillTile : Tile(Palette.Ground, false);
+        public static Sprite PlatformTile()   => Assets != null && Assets.platformTile   != null ? Assets.platformTile   : Tile(Palette.Platform, true);
+        public static Sprite WallTile()       => Assets != null && Assets.wallTile       != null ? Assets.wallTile       : Tile(Palette.GroundEdge, false);
+
+        public static Sprite BlockSprite()         => Assets != null && Assets.blockSprite         != null ? Assets.blockSprite         : Block(Palette.Block, false);
+        public static Sprite QuestionBlockSprite() => Assets != null && Assets.questionBlockSprite  != null ? Assets.questionBlockSprite  : Block(Palette.Block, true);
+        public static Sprite CamoBlockSprite()     => Assets != null && Assets.camoBlockSprite      != null ? Assets.camoBlockSprite      : Block(new Color(0.75f, 0.72f, 0.45f), true);
+        public static Sprite FallingBlockSprite()  => Assets != null && Assets.fallingBlockSprite   != null ? Assets.fallingBlockSprite   : Block(Palette.Falling, false);
+        public static Sprite CrusherBodySprite()   => Assets != null && Assets.crusherBodySprite    != null ? Assets.crusherBodySprite    : Block(new Color(0.45f, 0.20f, 0.26f), false);
+
+        public static Sprite SpikesSprite()     => Assets != null && Assets.spikesSprite     != null ? Assets.spikesSprite     : Spikes(2);
+        public static Sprite SpikesWideSprite() => Assets != null && Assets.spikesWideSprite != null ? Assets.spikesWideSprite
+                                                  : Assets != null && Assets.spikesSprite    != null ? Assets.spikesSprite
+                                                  : Spikes(3);
+
+        public static Sprite ChomperSprite() => Assets != null && Assets.chomperSprite != null ? Assets.chomperSprite : Chomper();
+        public static Sprite CoinSprite()    => Assets != null && Assets.coinSprite    != null ? Assets.coinSprite    : Coin();
+
+        public static Sprite CatSprite(Color body) => Assets != null && Assets.catSprite    != null ? Assets.catSprite    : Cat(body);
+        public static Sprite HollowSprite()        => Assets != null && Assets.hollowSprite != null ? Assets.hollowSprite : Hollow();
+        public static Sprite AuraGlowSprite()      => Assets != null && Assets.auraGlowSprite != null ? Assets.auraGlowSprite : Glow();
 
         /// <summary>URP's 2D renderer defaults sprites to a LIT material; with no 2D lights in
         /// the scene everything renders black. We force an unlit material instead.</summary>
@@ -215,6 +252,21 @@ namespace VoiceRunner
                 float a = Mathf.Clamp01(1f - d);
                 return new Color(1f, 1f, 1f, a * a);
             });
+        }
+
+        /// <summary>
+        /// Scales an "Art" transform so its sprite reads as targetHeight world units tall,
+        /// no matter what Pixels-Per-Unit the sprite was imported with. Use this for any
+        /// AssetLibrary sprite the player has to line up with a fixed-size collider (the cat,
+        /// the Hollow, etc.) so a mismatched import PPU can't blow it up or shrink it.
+        /// </summary>
+        public static void NormalizeHeight(Transform art, Sprite sprite, float targetHeight)
+        {
+            if (art == null || sprite == null || sprite.pixelsPerUnit <= 0f) return;
+            float nativeH = sprite.rect.height / sprite.pixelsPerUnit;
+            if (nativeH <= 0f) return;
+            float scale = targetHeight / nativeH;
+            art.localScale = new Vector3(scale, scale, 1f);
         }
 
         public static SpriteRenderer NewRenderer(GameObject go, Sprite sprite, int order, Color? tint = null)

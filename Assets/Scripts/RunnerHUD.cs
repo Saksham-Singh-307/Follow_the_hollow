@@ -14,7 +14,10 @@ namespace VoiceRunner
         public MicVoiceInput voice;
         public LevelDirector director;
         public ChaserHollow chaser;
+        public LaserShooter laser;
         public bool showDirectorDebug = true;
+
+        float laserFlash;
 
         static readonly Dictionary<string, Texture2D> texCache = new Dictionary<string, Texture2D>();
         GUIStyle label, big, small, centerBig;
@@ -48,6 +51,12 @@ namespace VoiceRunner
         }
 
         void Box(Rect r, Color c) { GUI.DrawTexture(r, Tex(c)); }
+
+        void Update()
+        {
+            if (laser != null && laser.JustFired) laserFlash = 1f;
+            laserFlash = Mathf.Max(0f, laserFlash - Time.deltaTime * 2.2f);
+        }
 
         void OnGUI()
         {
@@ -84,6 +93,22 @@ namespace VoiceRunner
             GUI.Label(new Rect(mx, my + mh + 2 * s, mw, 20 * s), micLine, small);
             GUI.color = c;
 
+            // ---- laser charge --------------------------------------------------
+            if (laser != null)
+            {
+                float lw = mw, lh = 10 * s;
+                float lx = mx, ly = my + mh + 24 * s;
+                string laserLabel = laserFlash > 0.05f
+                    ? "LASER FIRED!"
+                    : string.Format("LASER: shout x{0} quick ({1}/{0})", laser.shoutsToFire, laser.ComboCount);
+                GUI.Label(new Rect(lx, ly - 16 * s, lw, 16 * s), laserLabel, small);
+                Box(new Rect(lx, ly, lw, lh), new Color(1f, 1f, 1f, 0.10f));
+                float lc = laser.Charge01;
+                Color barColor = Color.Lerp(new Color(0.25f, 0.55f, 0.9f), new Color(0.35f, 1f, 0.85f), lc);
+                barColor = Color.Lerp(barColor, Color.white, laserFlash);
+                Box(new Rect(lx, ly, lw * lc, lh), barColor);
+            }
+
             // ---- hollow proximity -------------------------------------------
             if (chaser != null)
             {
@@ -109,7 +134,7 @@ namespace VoiceRunner
                     break;
                 case GameState.Ready:
                     Center("SHOUT TO RUN",
-                        "voice = jump   |   shout again mid-air = double jump   |   hold = float higher", s);
+                        "voice = jump   |   shout again mid-air = double jump   |   3 quick shouts in a row = fire laser", s);
                     break;
                 case GameState.Dead:
                     Box(new Rect(0, 0, Screen.width, Screen.height), new Color(0.05f, 0.02f, 0.08f, 0.55f));
