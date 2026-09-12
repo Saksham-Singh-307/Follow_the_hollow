@@ -46,6 +46,10 @@ namespace VoiceRunner
         public static Sprite ChomperSprite() => Assets != null && Assets.chomperSprite != null ? Assets.chomperSprite : Chomper();
         public static Sprite CoinSprite()    => Assets != null && Assets.coinSprite    != null ? Assets.coinSprite    : Coin();
 
+        public static Sprite SpeedPowerUpSprite()        => Assets != null && Assets.speedPowerUpSprite        != null ? Assets.speedPowerUpSprite        : Bolt();
+        public static Sprite HighJumpPowerUpSprite()     => Assets != null && Assets.highJumpPowerUpSprite     != null ? Assets.highJumpPowerUpSprite     : UpArrow();
+        public static Sprite InvisibilityPowerUpSprite() => Assets != null && Assets.invisibilityPowerUpSprite != null ? Assets.invisibilityPowerUpSprite : GhostIcon();
+
         public static Sprite CatSprite(Color body) => Assets != null && Assets.catSprite    != null ? Assets.catSprite    : Cat(body);
         public static Sprite HollowSprite()        => Assets != null && Assets.hollowSprite != null ? Assets.hollowSprite : Hollow();
         public static Sprite AuraGlowSprite()      => Assets != null && Assets.auraGlowSprite != null ? Assets.auraGlowSprite : Glow();
@@ -235,6 +239,87 @@ namespace VoiceRunner
             });
         }
 
+        // ---------------------------------------------------------------- power-up icons
+        // Authored as an 8x8 mask (row 0 = bottom) and stamped onto a 32x32 texture,
+        // 4 real pixels per mask cell - easiest way to keep these readable at a glance.
+
+        static bool Cell8(string[] rows, int x, int y)
+        {
+            int col = Mathf.Clamp(x / 4, 0, 7);
+            int row = Mathf.Clamp(y / 4, 0, 7);
+            return rows[row][col] == 'X';
+        }
+
+        static readonly string[] BoltRows =
+        {
+            ".XX.....",
+            "..XX....",
+            "....XX..",
+            ".XXXXXX.",
+            "..XX....",
+            "...XX...",
+            "....XX..",
+            "..XX....",
+        };
+
+        /// <summary>Lightning bolt: the speed boost.</summary>
+        public static Sprite Bolt()
+        {
+            return Build("bolt_powerup", 32, 32, (x, y) =>
+            {
+                if (!Cell8(BoltRows, x, y)) return Clear;
+                bool hi = (x % 4 < 2) == (y % 4 < 2);
+                return hi ? new Color(1f, 0.95f, 0.55f) : new Color(1f, 0.80f, 0.15f);
+            });
+        }
+
+        static readonly string[] ArrowRows =
+        {
+            "..XXXX..",
+            "..XXXX..",
+            "..XXXX..",
+            "..XXXX..",
+            "XXXXXXXX",
+            ".XXXXXX.",
+            "..XXXX..",
+            "...XX...",
+        };
+
+        /// <summary>Upward arrow: the high jump.</summary>
+        public static Sprite UpArrow()
+        {
+            return Build("uparrow_powerup", 32, 32, (x, y) =>
+            {
+                if (!Cell8(ArrowRows, x, y)) return Clear;
+                bool hi = (x / 4 + y / 4) % 2 == 0;
+                return hi ? new Color(0.65f, 1f, 0.70f) : new Color(0.35f, 0.92f, 0.45f);
+            });
+        }
+
+        static readonly string[] GhostRows =
+        {
+            "X.X.X.X.",
+            "XXXXXXXX",
+            "XXXXXXXX",
+            "XXXXXXXX",
+            "XXXXXXXX",
+            ".XXXXXX.",
+            "..XXXX..",
+            "...XX...",
+        };
+
+        /// <summary>Little ghost: the invisibility power-up.</summary>
+        public static Sprite GhostIcon()
+        {
+            return Build("ghost_powerup", 32, 32, (x, y) =>
+            {
+                if (!Cell8(GhostRows, x, y)) return Clear;
+                int col = x / 4, row = y / 4;
+                if (row == 4 && (col == 2 || col == 5)) return new Color(0.25f, 0.15f, 0.38f);
+                return new Color(0.82f, 0.78f, 0.98f, 0.85f);
+            });
+        }
+
         /// <summary>Soft vertical gradient used for parallax backdrop bands.</summary>
         public static Sprite Band(Color top, Color bottom)
         {
@@ -252,21 +337,6 @@ namespace VoiceRunner
                 float a = Mathf.Clamp01(1f - d);
                 return new Color(1f, 1f, 1f, a * a);
             });
-        }
-
-        /// <summary>
-        /// Scales an "Art" transform so its sprite reads as targetHeight world units tall,
-        /// no matter what Pixels-Per-Unit the sprite was imported with. Use this for any
-        /// AssetLibrary sprite the player has to line up with a fixed-size collider (the cat,
-        /// the Hollow, etc.) so a mismatched import PPU can't blow it up or shrink it.
-        /// </summary>
-        public static void NormalizeHeight(Transform art, Sprite sprite, float targetHeight)
-        {
-            if (art == null || sprite == null || sprite.pixelsPerUnit <= 0f) return;
-            float nativeH = sprite.rect.height / sprite.pixelsPerUnit;
-            if (nativeH <= 0f) return;
-            float scale = targetHeight / nativeH;
-            art.localScale = new Vector3(scale, scale, 1f);
         }
 
         public static SpriteRenderer NewRenderer(GameObject go, Sprite sprite, int order, Color? tint = null)

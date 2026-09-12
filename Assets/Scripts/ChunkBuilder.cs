@@ -198,6 +198,24 @@ namespace VoiceRunner
             return go;
         }
 
+        /// <summary>A timed buff pickup - speed, invisibility, or a high jump.</summary>
+        public static GameObject PowerUp(Transform parent, float cx, float cy, PowerUpKind kind)
+        {
+            var go = Node(parent, "PowerUp_" + kind, new Vector2(cx, cy));
+            var col = go.AddComponent<CircleCollider2D>();
+            col.isTrigger = true;
+            col.radius = 0.46f;
+
+            Sprite sprite;
+            if (kind == PowerUpKind.Speed) sprite = SpriteFactory.SpeedPowerUpSprite();
+            else if (kind == PowerUpKind.HighJump) sprite = SpriteFactory.HighJumpPowerUpSprite();
+            else sprite = SpriteFactory.InvisibilityPowerUpSprite();
+
+            Art(go, sprite, 2, Color.white);
+            go.AddComponent<PowerUp>().kind = kind;
+            return go;
+        }
+
         public static GameObject Crusher(Transform parent, float cx, float cy)
         {
             var go = Node(parent, "Crusher", new Vector2(cx, cy));

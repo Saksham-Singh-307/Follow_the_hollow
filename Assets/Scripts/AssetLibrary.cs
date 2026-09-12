@@ -47,6 +47,11 @@ namespace VoiceRunner
         [Header("Pickups")]
         public Sprite coinSprite; // real coins — also used for disguised fake coins on purpose
 
+        [Header("Power-ups")]
+        public Sprite speedPowerUpSprite;        // temporary run-speed boost
+        public Sprite highJumpPowerUpSprite;      // temporary jump-height boost
+        public Sprite invisibilityPowerUpSprite;  // temporary immunity to hazards + the Hollow
+
         [Header("Characters")]
         public Sprite catSprite;      // the player
         public Sprite hollowSprite;   // the chaser

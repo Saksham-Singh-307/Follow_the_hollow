@@ -12,9 +12,7 @@ namespace VoiceRunner
         [Header("Chase")]
         public float baseSpeedFactor = 0.965f;   // relative to the player's run speed
         public float rampPerSecond = 0.004f;     // it learns your rhythm
-        public float cleanSpeedCap = 0.99f;      // ramp alone never reaches this - a flawless run always holds the gap
-        public float stallSpeedBoost = 0.35f;    // extra speed added while the player is wedged/blocked
-        public float maxSpeedFactor = 1.12f;     // hard ceiling once ramp + stall boost combine
+        public float maxSpeedFactor = 1.12f;
         public float startGap = 13f;
         public float catchDistance = 1.0f;
         public float maxGap = 20f;
@@ -59,10 +57,7 @@ namespace VoiceRunner
             if (game.State == GameState.Playing)
             {
                 runTime += Time.deltaTime;
-                // The clean-run ramp is capped below 1.0 - on its own it can NEVER catch you.
-                float rampFactor = Mathf.Min(baseSpeedFactor + runTime * rampPerSecond, cleanSpeedCap);
-                // Getting wedged against a wall or a trap is what actually lets it close the gap.
-                speedFactor = Mathf.Min(rampFactor + player.StallAmount * stallSpeedBoost, maxSpeedFactor);
+                speedFactor = Mathf.Min(baseSpeedFactor + runTime * rampPerSecond, maxSpeedFactor);
 
                 float speed = player.runSpeed * speedFactor;
                 // If it falls too far behind it stops being a threat, so it surges.
@@ -71,7 +66,7 @@ namespace VoiceRunner
 
                 Pressure = Mathf.Clamp01(1f - (Gap - catchDistance) / (startGap - catchDistance));
 
-                if (Gap <= catchDistance) player.Kill(DeathCause.Caught);
+                if (Gap <= catchDistance && !player.IsInvisible) player.Kill(DeathCause.Caught);
             }
 
             // drift toward the cat's height, always a beat late

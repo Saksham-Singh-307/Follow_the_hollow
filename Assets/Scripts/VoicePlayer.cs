@@ -31,6 +31,30 @@ namespace VoiceRunner
         public bool UsedDoubleJump { get; private set; }
         public float StallAmount { get; private set; } // 0 = running free, 1 = fully blocked
 
+        [Header("Power-ups")]
+        [Tooltip("How the run speed multiplier eases back to 1 once a speed boost ends.")]
+        public float powerUpFadeRate = 6f;
+
+        /// <summary>True while a speed power-up is active.</summary>
+        public bool IsSpeedBoosted => speedTimer > 0f;
+        public float SpeedBoostTimeLeft => Mathf.Max(0f, speedTimer);
+        public float SpeedBoostDuration => speedDurationTotal;
+
+        /// <summary>True while a high-jump power-up is active.</summary>
+        public bool IsHighJumping => jumpTimer > 0f;
+        public float HighJumpTimeLeft => Mathf.Max(0f, jumpTimer);
+        public float HighJumpDuration => jumpDurationTotal;
+
+        /// <summary>True while an invisibility power-up is active - hazards pass straight
+        /// through the cat, and the Hollow cannot catch it.</summary>
+        public bool IsInvisible => invisTimer > 0f;
+        public float InvisibleTimeLeft => Mathf.Max(0f, invisTimer);
+        public float InvisibleDuration => invisDurationTotal;
+
+        float speedTimer, speedMul = 1f, speedDurationTotal;
+        float jumpTimer, jumpMul = 1f, jumpDurationTotal;
+        float invisTimer, invisDurationTotal;
+
         Rigidbody2D rb;
         BoxCollider2D box;
         SpriteRenderer sr;
@@ -72,6 +96,28 @@ namespace VoiceRunner
             if (voice != null) voice.OnBurst += OnVoiceBurst;
         }
 
+        /// <summary>Called by a PowerUp pickup. Refreshes the timer rather than stacking if
+        /// another of the same kind is grabbed while one is already running.</summary>
+        public void ApplySpeedBoost(float multiplier, float duration)
+        {
+            speedMul = multiplier;
+            speedTimer = duration;
+            speedDurationTotal = duration;
+        }
+
+        public void ApplyHighJump(float multiplier, float duration)
+        {
+            jumpMul = multiplier;
+            jumpTimer = duration;
+            jumpDurationTotal = duration;
+        }
+
+        public void ApplyInvisibility(float duration)
+        {
+            invisTimer = duration;
+            invisDurationTotal = duration;
+        }
+
         void OnVoiceBurst()
         {
             if (!alive || game == null) return;
@@ -93,12 +139,22 @@ namespace VoiceRunner
             lastGroundedTime = -99f;
             StallAmount = 0f;
             lastX = pos.x;
+            speedTimer = 0f; speedMul = 1f; speedDurationTotal = 0f;
+            jumpTimer = 0f; jumpMul = 1f; jumpDurationTotal = 0f;
+            invisTimer = 0f; invisDurationTotal = 0f;
             if (art != null) art.localScale = Vector3.one;
             if (sr != null) sr.color = Color.white;
         }
 
         void Update()
         {
+            if (alive)
+            {
+                if (speedTimer > 0f) { speedTimer -= Time.deltaTime; if (speedTimer <= 0f) { speedTimer = 0f; speedMul = 1f; } }
+                if (jumpTimer > 0f) { jumpTimer -= Time.deltaTime; if (jumpTimer <= 0f) { jumpTimer = 0f; jumpMul = 1f; } }
+                if (invisTimer > 0f) { invisTimer -= Time.deltaTime; if (invisTimer <= 0f) invisTimer = 0f; }
+            }
+
             if (art != null)
             {
                 // squash & stretch driven by vertical speed
@@ -109,6 +165,21 @@ namespace VoiceRunner
                 art.localScale = Vector3.Lerp(art.localScale, target, Time.deltaTime * 14f);
                 art.localRotation = Quaternion.Lerp(art.localRotation,
                     Quaternion.Euler(0, 0, IsGrounded ? 0f : -rb.linearVelocity.y * 0.8f), Time.deltaTime * 8f);
+            }
+
+            if (sr != null && alive)
+            {
+                float targetAlpha = 1f;
+                if (invisTimer > 0f)
+                {
+                    // Flicker as a fading-soon warning in the last half second.
+                    targetAlpha = invisTimer < 0.5f
+                        ? 0.25f + (Mathf.Sin(Time.time * 24f) * 0.5f + 0.5f) * 0.35f
+                        : 0.4f;
+                }
+                var c = sr.color;
+                c.a = Mathf.MoveTowards(c.a, targetAlpha, Time.deltaTime * powerUpFadeRate);
+                sr.color = c;
             }
         }
 
@@ -124,7 +195,7 @@ namespace VoiceRunner
             bool playing = game != null && game.State == GameState.Playing;
             if (playing)
             {
-                rb.linearVelocity = new Vector2(runSpeed, rb.linearVelocity.y);
+                rb.linearVelocity = new Vector2(runSpeed * speedMul, rb.linearVelocity.y);
             }
             else
             {
@@ -163,13 +234,13 @@ namespace VoiceRunner
             bool canGroundJump = IsGrounded || (Time.time - lastGroundedTime <= coyoteTime);
             if (canGroundJump)
             {
-                Jump(jumpVelocity);
+                Jump(jumpVelocity * jumpMul);
                 lastGroundedTime = -99f;
             }
             else if (!UsedDoubleJump)
             {
                 UsedDoubleJump = true;
-                Jump(doubleJumpVelocity);
+                Jump(doubleJumpVelocity * jumpMul);
                 SpawnPuff();
             }
         }
@@ -223,6 +294,8 @@ namespace VoiceRunner
             if (!alive || game == null || game.State != GameState.Playing) return;
             if (other.gameObject.layer == VRLayers.Hazard)
             {
+                if (IsInvisible) return; // ghosted straight through
+
                 var incoming = other.GetComponent<ForwardEnemyMover>();
                 if (incoming != null) { Kill(DeathCause.Ambushed); return; }
 

@@ -5,8 +5,9 @@ namespace VoiceRunner
 {
     /// <summary>
     /// Spawns enemies that approach from ahead of the player - the opposite direction
-    /// from the Hollow, which chases from behind. Touching one is lethal; the player's
-    /// laser (LaserShooter) destroys them first. Attach via GameBootstrap.
+    /// from the Hollow, which chases from behind. Touching one is lethal; jump over it,
+    /// weave around it, or use an Invisibility power-up to pass straight through it.
+    /// Attach via GameBootstrap.
     /// </summary>
     public class ForwardEnemySpawner : MonoBehaviour
     {
@@ -83,10 +84,7 @@ namespace VoiceRunner
         }
     }
 
-    /// <summary>
-    /// Walks toward the player from ahead. Lethal on contact; can be destroyed early
-    /// by the player's laser via Zap().
-    /// </summary>
+    /// <summary>Walks toward the player from ahead. Lethal on contact - dodge it.</summary>
     public class ForwardEnemyMover : MonoBehaviour
     {
         public float speed = 4f;
@@ -112,21 +110,7 @@ namespace VoiceRunner
         void OnTriggerEnter2D(Collider2D other)
         {
             var vp = other.GetComponent<VoicePlayer>();
-            if (vp != null) vp.Kill(DeathCause.Ambushed);
-        }
-
-        /// <summary>Called by LaserShooter when a beam catches this enemy.</summary>
-        public void Zap()
-        {
-            var fx = new GameObject("EnemyZapFX");
-            fx.transform.position = transform.position;
-            var s = SpriteFactory.NewRenderer(fx, SpriteFactory.Glow(), 5, new Color(0.4f, 1f, 0.85f, 0.85f));
-            fx.AddComponent<FadeAway>().Init(s, 0.3f, 2.4f);
-
-            var gm = game != null ? game : GameManager.Instance;
-            if (gm != null) gm.AddCoin();
-
-            Destroy(gameObject);
+            if (vp != null && !vp.IsInvisible) vp.Kill(DeathCause.Ambushed);
         }
     }
 }

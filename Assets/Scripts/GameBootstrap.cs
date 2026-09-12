@@ -23,10 +23,6 @@ namespace VoiceRunner
         [Header("Art (optional — leave slots empty to keep the procedural placeholder shapes)")]
         public AssetLibrary assets = new AssetLibrary();
 
-        [Header("Laser")]
-        [Tooltip("How many quick shouts in a row fire the laser.")]
-        public int laserShoutsToFire = 3;
-
         [Header("Forward Enemies")]
         public bool forwardEnemiesEnabled = true;
 
@@ -48,9 +44,6 @@ namespace VoiceRunner
             voice.triggerLevel = voiceTriggerLevel;
 
             var player = BuildPlayer();
-            var laser = player.GetComponent<LaserShooter>();
-            laser.shoutsToFire = laserShoutsToFire;
-            laser.Bind(voice);
 
             var chaser = BuildChaser();
 
@@ -67,7 +60,6 @@ namespace VoiceRunner
 
             player.game = game;
             player.Bind(voice);
-            laser.game = game;
             chaser.player = player;
             chaser.game = game;
             director.player = player;
@@ -87,7 +79,6 @@ namespace VoiceRunner
             hud.voice = voice;
             hud.director = director;
             hud.chaser = chaser;
-            hud.laser = laser;
 
             // Stand somewhere sane until the first run starts.
             director.ResetLevel(Random.Range(1, 99999), -6f);
@@ -181,11 +172,7 @@ namespace VoiceRunner
 
             var art = new GameObject("Art");
             art.transform.SetParent(go.transform, false);
-            var catSprite = SpriteFactory.CatSprite(Palette.Cat);
-            SpriteFactory.NewRenderer(art, catSprite, 5);
-            // Custom art can be imported at any PPU; normalize so the cat always reads at the
-            // same size the placeholder does (placeholder is a 32x32 sprite @ PPU 32 = 1 unit tall).
-            SpriteFactory.NormalizeHeight(art.transform, catSprite, 1.0f);
+            SpriteFactory.NewRenderer(art, SpriteFactory.CatSprite(Palette.Cat), 5);
 
             var rb = go.AddComponent<Rigidbody2D>();
             rb.freezeRotation = true;
@@ -199,7 +186,6 @@ namespace VoiceRunner
             vp.jumpVelocity = jumpVelocity;
             vp.doubleJumpVelocity = doubleJumpVelocity;
 
-            go.AddComponent<LaserShooter>();
             return vp;
         }
 
@@ -210,16 +196,14 @@ namespace VoiceRunner
 
             var glow = new GameObject("Glow");
             glow.transform.SetParent(go.transform, false);
-            var glowSprite = SpriteFactory.AuraGlowSprite();
-            var gsr = SpriteFactory.NewRenderer(glow, glowSprite, 3,
+            var gsr = SpriteFactory.NewRenderer(glow, SpriteFactory.AuraGlowSprite(), 3,
                 new Color(0.35f, 0.05f, 0.30f, 0.22f));
-            SpriteFactory.NormalizeHeight(gsr.transform, glowSprite, 11.0f);
+            gsr.transform.localScale = Vector3.one * 5.5f;
 
             var art = new GameObject("Art");
             art.transform.SetParent(go.transform, false);
-            var hollowSprite = SpriteFactory.HollowSprite();
-            SpriteFactory.NewRenderer(art, hollowSprite, 4);
-            SpriteFactory.NormalizeHeight(art.transform, hollowSprite, 2.4f);
+            SpriteFactory.NewRenderer(art, SpriteFactory.HollowSprite(), 4);
+            art.transform.localScale = Vector3.one * 2.4f;
 
             return go.AddComponent<ChaserHollow>();
         }

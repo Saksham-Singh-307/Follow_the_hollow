@@ -20,6 +20,8 @@ namespace VoiceRunner
         public float distanceToMaxDifficulty = 520f;
         public float skillGainPerSecond = 0.006f;
         public float mercyPerDeath = 0.09f;
+        [Tooltip("Minimum number of calm/trap chunks between one power-up and the next.")]
+        public int minChunksBetweenPowerUps = 5;
 
         [Header("Refs")]
         public VoicePlayer player;
@@ -39,6 +41,7 @@ namespace VoiceRunner
         float survivedTime;
         int mercyStack;
         int chunksSinceTrap;
+        int chunksSincePowerUp;
         bool lastChunkWasFake;
 
         public void ResetLevel(int seed, float startX)
@@ -51,6 +54,7 @@ namespace VoiceRunner
             runStartX = startX;
             survivedTime = 0f;
             chunksSinceTrap = 99;
+            chunksSincePowerUp = 2; // let the runway settle before the first one shows up
             lastChunkWasFake = false;
             ChunksBuilt = 0;
             Difficulty = 0f;
@@ -168,14 +172,25 @@ namespace VoiceRunner
             bool trapped = Chance(TrapChance());
             if (!trapped)
             {
-                width = Chance(0.45f) ? Flat(root, x, d) : Gap(root, x, d);
-                LastChunkName = "Calm";
+                if (chunksSincePowerUp >= minChunksBetweenPowerUps && Chance(0.3f))
+                {
+                    width = PowerUpChunk(root, x, d);
+                    LastChunkName = "Power-up";
+                    chunksSincePowerUp = 0;
+                }
+                else
+                {
+                    width = Chance(0.45f) ? Flat(root, x, d) : Gap(root, x, d);
+                    LastChunkName = "Calm";
+                    chunksSincePowerUp++;
+                }
                 chunksSinceTrap++;
             }
             else
             {
                 width = PickTrapChunk(root, x, d);
                 chunksSinceTrap = 0;
+                chunksSincePowerUp++;
             }
 
             cursorX = x + width;
@@ -230,6 +245,22 @@ namespace VoiceRunner
                 int n = Rand(2, 4);
                 for (int i = 0; i < n; i++) ChunkBuilder.Coin(root, x + 2.5f + i, 2.2f);
             }
+            return w;
+        }
+
+        /// <summary>A calm stretch built around a single power-up pickup.</summary>
+        int PowerUpChunk(Transform root, float x, float d)
+        {
+            int w = Rand(8, 11);
+            ChunkBuilder.Ground(root, x, w);
+
+            var kind = (PowerUpKind)Rand(0, 2);
+            float cx = x + w * 0.5f;
+            ChunkBuilder.PowerUp(root, cx, 1.6f, kind);
+
+            // A couple of flanking coins so it still feels part of the coin trail.
+            if (Chance(0.5f)) ChunkBuilder.Coin(root, cx - 2.2f, 1.6f);
+            if (Chance(0.5f)) ChunkBuilder.Coin(root, cx + 2.2f, 1.6f);
             return w;
         }
 
