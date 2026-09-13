@@ -23,6 +23,12 @@ namespace VoiceRunner
         public float restartLockout = 0.6f;
         public Vector3 spawn = new Vector3(2f, 2f, 0f);
 
+        [Header("Coin Combo")]
+        [Tooltip("How long after a coin pickup you have to grab another before the streak resets.")]
+        public float comboWindow = 1.1f;
+        [Tooltip("Coin value multiplier caps out here so a long streak stays worth chasing but not infinite.")]
+        public int maxComboMultiplier = 5;
+
         public GameState State { get; private set; } = GameState.Calibrating;
         public float Distance { get; private set; }
         public float BestDistance { get; private set; }
@@ -32,6 +38,15 @@ namespace VoiceRunner
         public DeathCause LastCause { get; private set; }
         public float TimeInState => Time.time - stateEnteredAt;
 
+        /// <summary>Current streak multiplier - grows by 1 each time a coin is grabbed
+        /// before <see cref="comboWindow"/> runs out, resets to 1 the moment it expires.</summary>
+        public int ComboMultiplier { get; private set; } = 1;
+        /// <summary>How many coins the last pickup actually added (== the multiplier at that moment).</summary>
+        public int LastCoinGain { get; private set; } = 1;
+        /// <summary>1 = streak window just refreshed, 0 = about to expire. Drives the HUD's countdown bar.</summary>
+        public float ComboWindowRemaining01 => comboWindow > 0f ? Mathf.Clamp01(comboTimer / comboWindow) : 0f;
+
+        float comboTimer;
         float stateEnteredAt;
         float startX;
         bool restartQueued;
@@ -56,6 +71,9 @@ namespace VoiceRunner
         {
             Runs++;
             Coins = 0;
+            ComboMultiplier = 1;
+            LastCoinGain = 1;
+            comboTimer = 0f;
             restartQueued = false;
 
             int seed = Random.Range(1, int.MaxValue);   // a brand new level every run
@@ -91,6 +109,11 @@ namespace VoiceRunner
                         Distance = Mathf.Max(Distance, player.transform.position.x - startX);
                         player.CheckPit(killY);
                     }
+                    if (comboTimer > 0f)
+                    {
+                        comboTimer -= Time.deltaTime;
+                        if (comboTimer <= 0f) { comboTimer = 0f; ComboMultiplier = 1; }
+                    }
                     break;
 
                 case GameState.Dead:
@@ -118,7 +141,17 @@ namespace VoiceRunner
             if (State == GameState.Dead && TimeInState > restartLockout) restartQueued = true;
         }
 
-        public void AddCoin() { Coins++; }
+        /// <summary>Called by a Coin pickup. Chaining pickups inside the combo window grows
+        /// the multiplier (capped at maxComboMultiplier); letting it lapse resets to 1x.</summary>
+        public void AddCoin()
+        {
+            ComboMultiplier = comboTimer > 0f
+                ? Mathf.Min(ComboMultiplier + 1, maxComboMultiplier)
+                : 1;
+            comboTimer = comboWindow;
+            LastCoinGain = ComboMultiplier;
+            Coins += ComboMultiplier;
+        }
 
         public void PlayerDied(DeathCause cause)
         {

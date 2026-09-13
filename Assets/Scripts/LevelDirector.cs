@@ -209,6 +209,7 @@ namespace VoiceRunner
                 ("Stairs",          0.6f,                       Stairs),
                 ("Platform hop",    d > 0.10f ? 1.0f : 0f,      PlatformHop),
                 ("Coin bait",       d > 0.15f ? 0.8f : 0f,      CoinBait),
+                ("Fork",            d > 0.20f ? 0.9f : 0f,      Fork),
                 ("Fake blocks",     d > 0.22f ? 1.1f : 0f,      FakeBlockBait),
                 ("Chompers",        d > 0.28f ? 0.9f : 0f,      ChomperNest),
                 ("Moving ground",   d > 0.34f ? 0.8f : 0f,      Movers),
@@ -381,6 +382,62 @@ namespace VoiceRunner
                 else ChunkBuilder.Coin(root, cx, 1.6f);
             }
             return w;
+        }
+
+        /// <summary>
+        /// A real choice, not a corridor: the ground runs safe and unbroken the whole way
+        /// (coin-poor, zero risk), while a line of platforms floats above it carrying a
+        /// power-up and a coin trail (better loot, tighter jump timing). Reaching the first
+        /// platform takes a full held jump or a double jump - the same "keep shouting to go
+        /// higher" trick the game already teaches - so it is never forced on you. Miss a hop
+        /// once you're up there and you simply drop back onto the safe lane below; nothing
+        /// about staying high is instant death, it is purely a bet on your own timing.
+        /// </summary>
+        int Fork(Transform root, float x, float d)
+        {
+            const float highY = 3.6f;
+            const int platWidth = 2;
+
+            int lead = 3; // flat runway so the fork is visible before it starts
+            int hops = Rand(3, 5);
+
+            var highX = new List<float>();
+            float cx = x + lead + 2f;
+            for (int i = 0; i < hops; i++)
+            {
+                highX.Add(cx);
+                cx += platWidth;
+                if (i < hops - 1)
+                {
+                    // Tighter than a normal platform hop - the price of the better loot.
+                    int gap = Rand(2, Mathf.Max(2, MaxGap() - 2));
+                    cx += gap;
+                }
+            }
+
+            int landingGap = Rand(2, Mathf.Max(2, MaxGap() - 1)); // step back down onto the merge
+            int tail = 5;
+            float endX = cx + landingGap;
+            int totalWidth = Mathf.RoundToInt(endX + tail - x);
+
+            // Low lane: unbroken ground under the entire fork. A missed jump above just
+            // lands you here instead of killing you, and it is also the whole path if you
+            // never leave the ground at all.
+            ChunkBuilder.Ground(root, x, totalWidth);
+            if (Chance(0.5f)) ChunkBuilder.Coin(root, x + 1.5f, 2.0f);
+            if (Chance(0.5f)) ChunkBuilder.Coin(root, endX + 1.5f, 2.0f);
+
+            // High lane: the reward for climbing up and committing to the harder timing.
+            var kind = (PowerUpKind)Rand(0, 2);
+            for (int i = 0; i < highX.Count; i++)
+            {
+                ChunkBuilder.Platform(root, highX[i], platWidth, highY);
+                float coinX = highX[i] + platWidth * 0.5f;
+                if (i == 0) ChunkBuilder.PowerUp(root, coinX, highY + 1.2f, kind);
+                else if (Chance(0.7f)) ChunkBuilder.Coin(root, coinX, highY + 1.2f);
+            }
+
+            return totalWidth;
         }
 
         int ChomperNest(Transform root, float x, float d)

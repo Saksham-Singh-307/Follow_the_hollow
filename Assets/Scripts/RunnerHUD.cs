@@ -76,7 +76,10 @@ namespace VoiceRunner
             float pulse = coinBumpDuration > 0f ? coinBumpTimer / coinBumpDuration : 0f; // 1 -> 0
             var prevMatrix = GUI.matrix;
             if (pulse > 0f)
-                GUIUtility.ScaleAroundPivot(Vector2.one * (1f + 0.22f * pulse), badge.center);
+            {
+                float pulseMag = 0.20f + 0.04f * Mathf.Min(game.LastCoinGain - 1, 4);
+                GUIUtility.ScaleAroundPivot(Vector2.one * (1f + pulseMag * pulse), badge.center);
+            }
 
             Box(badge, new Color(0f, 0f, 0f, 0.35f));
             Box(new Rect(badge.x + 1.5f * s, badge.y + 1.5f * s, badge.width - 3f * s, badge.height - 3f * s),
@@ -89,17 +92,46 @@ namespace VoiceRunner
             var countRect = new Rect(iconRect.xMax + 6 * s, badge.y, badge.width - iconSize - 14 * s, badge.height);
             GUI.Label(countRect, game.Coins.ToString(), coinCountStyle);
 
+            // ---- combo tag, overlapping the badge's top-right corner like a notification pip
+            if (game.ComboMultiplier > 1)
+            {
+                Color comboColor = ComboColor(game.ComboMultiplier);
+                float tagW = 30 * s, tagH = 17 * s;
+                var tagRect = new Rect(badge.xMax - tagW * 0.55f, badge.y - tagH * 0.55f, tagW, tagH);
+                Box(tagRect, new Color(comboColor.r * 0.3f, comboColor.g * 0.3f, comboColor.b * 0.3f, 0.92f));
+                var tagStyle = new GUIStyle(popStyle) { fontSize = Mathf.RoundToInt(12 * s) };
+                tagStyle.normal.textColor = comboColor;
+                GUI.Label(tagRect, "x" + game.ComboMultiplier, tagStyle);
+            }
+
             GUI.matrix = prevMatrix;
+
+            // ---- streak countdown: how long you've got left to keep the combo alive
+            if (game.ComboWindowRemaining01 > 0f)
+            {
+                float barY = badge.yMax + 3 * s;
+                Box(new Rect(badge.x, barY, badge.width, 3 * s), new Color(1f, 1f, 1f, 0.10f));
+                Box(new Rect(badge.x, barY, badge.width * game.ComboWindowRemaining01, 3 * s),
+                    ComboColor(game.ComboMultiplier));
+            }
 
             if (pulse > 0f)
             {
                 var c = popStyle.normal.textColor;
                 popStyle.normal.textColor = new Color(1f, 0.85f, 0.25f, pulse);
-                GUI.Label(new Rect(badge.x, badge.y - (16 + 10 * (1f - pulse)) * s, badge.width, 18 * s), "+1", popStyle);
+                GUI.Label(new Rect(badge.x, badge.y - (16 + 10 * (1f - pulse)) * s, badge.width, 18 * s),
+                    "+" + game.LastCoinGain, popStyle);
                 popStyle.normal.textColor = c;
             }
 
             GUI.Label(new Rect(badge.xMax + 8 * s, y, 120 * s, h), string.Format("best {0}", game.BestCoins), small);
+        }
+
+        /// <summary>Cool yellow at x1, ramping to a hot red as the streak climbs toward the cap.</summary>
+        static Color ComboColor(int multiplier)
+        {
+            float t = Mathf.InverseLerp(1f, 5f, multiplier);
+            return Color.Lerp(new Color(1f, 0.92f, 0.55f), new Color(1f, 0.35f, 0.15f), t);
         }
 
         void Box(Rect r, Color c) { GUI.DrawTexture(r, Tex(c)); }
